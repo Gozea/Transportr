@@ -22,6 +22,7 @@ package de.grobox.transportr.utils
 import android.content.Context
 import android.content.res.Resources
 import android.view.View
+import com.mikepenz.materialdrawer.R as MaterialDrawerR
 import de.grobox.transportr.R
 import de.grobox.transportr.utils.DateUtils.formatDelay
 import de.grobox.transportr.utils.DateUtils.formatDuration
@@ -80,8 +81,8 @@ class DateUtilsTest {
     fun initMocks() {
         MockitoAnnotations.initMocks(this)
         `when`(context.resources).thenReturn(resources)
-        `when`(resources.getColor(R.color.md_green_500)).thenReturn(GREEN)
-        `when`(resources.getColor(R.color.md_red_500)).thenReturn(RED)
+        `when`(resources.getColor(MaterialDrawerR.color.md_green_500)).thenReturn(GREEN)
+        `when`(resources.getColor(MaterialDrawerR.color.md_red_500)).thenReturn(RED)
 
         `when`(context.getString(R.string.now_small)).thenReturn(getNow())
         `when`(context.getString(eq(R.string.in_x_minutes), anyLong())).thenAnswer { i -> getIn(i.arguments[1]) }

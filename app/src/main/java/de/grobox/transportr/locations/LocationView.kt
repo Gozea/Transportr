@@ -44,6 +44,7 @@ import de.grobox.transportr.data.locations.FavoriteLocation
 import de.grobox.transportr.data.locations.FavoriteLocation.FavLocationType
 import de.grobox.transportr.data.locations.HomeLocation
 import de.grobox.transportr.data.locations.WorkLocation
+import de.grobox.transportr.databinding.LocationViewBinding
 import de.grobox.transportr.locations.LocationAdapter.TYPING_THRESHOLD
 import de.grobox.transportr.locations.SuggestLocationsTask.SuggestLocationsTaskCallback
 import de.grobox.transportr.networks.TransportNetwork
@@ -77,6 +78,9 @@ open class LocationView @JvmOverloads constructor(context: Context, attrs: Attri
             adapter.setSort(type)
         }
 
+    /** The "use current location" button of the inflated location_view layout. */
+    val gpsButton: ImageButton get() = ui.gps
+
     private val text: String?
         get() = if (ui.location.text != null) {
             ui.location.text.toString()
@@ -93,8 +97,7 @@ open class LocationView @JvmOverloads constructor(context: Context, attrs: Attri
         orientation = HORIZONTAL
 
         val inflater = context.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-        inflater.inflate(R.layout.location_view, this, true)
-        ui = LocationViewHolder(this)
+        ui = LocationViewHolder(LocationViewBinding.inflate(inflater, this))
 
         ui.location.hint = hint
         if (!isInEditMode) {
@@ -137,12 +140,12 @@ open class LocationView @JvmOverloads constructor(context: Context, attrs: Attri
         })
     }
 
-    protected class LocationViewHolder internal constructor(view: View) {
-        val status: ImageView = view.findViewById(R.id.statusButton)
-        val location: AutoCompleteTextView = view.findViewById(R.id.location)
-        internal val progress: ProgressBar = view.findViewById(R.id.progress)
-        val clear: ImageButton = view.findViewById(R.id.clearButton)
-        val gps: ImageButton = view.findViewById(R.id.gpsButton)
+    protected class LocationViewHolder internal constructor(binding: LocationViewBinding) {
+        val status: ImageView = binding.statusButton
+        val location: AutoCompleteTextView = binding.location
+        internal val progress: ProgressBar = binding.progress
+        val clear: ImageButton = binding.clearButton
+        val gps: ImageButton = binding.gpsButton
     }
 
     /* State Saving and Restoring */

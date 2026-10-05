@@ -37,12 +37,10 @@ class WorkPopupMenu extends SpecialLocationPopupMenu {
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
-		switch (item.getItemId()) {
-			case R.id.action_change:
-				listener.changeWork();
-			default:
-				return super.onMenuItemClick(item);
+		if (item.getItemId() == R.id.action_change) {
+			listener.changeWork();
 		}
+		return super.onMenuItemClick(item);
 	}
 
 	@Override

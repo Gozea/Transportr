@@ -1,0 +1,168 @@
+/*
+ * Maintenance helper for gradle/verification-metadata.xml. It is not applied to
+ * the build, it only registers tasks when passed with `-I`.
+ *
+ * Record the checksums of the artifacts Android Studio asks for:
+ *
+ *   ./gradlew --write-verification-metadata sha256 --no-configuration-cache \
+ *       -I gradle/pin-sources.init.gradle pinDependencySources
+ *
+ * Then check that the recorded checksums are complete (this is the guard that
+ * catches the IDE-only artifacts a normal build never downloads):
+ *
+ *   ./gradlew --no-configuration-cache \
+ *       -I gradle/pin-sources.init.gradle verifyDependencySources
+ *
+ * Why it is needed: dependency verification only knows about the artifacts a
+ * given build actually downloads. `./gradlew --write-verification-metadata sha256 build`
+ * never resolves *source* or *javadoc* artifacts, so their checksums end up
+ * missing. Android Studio however resolves them during sync, in detached
+ * configurations of its own, which fails with
+ * "Dependency verification failed for configuration ':app:debugAndroidTestCompileClasspath'"
+ * and breaks the build inside the IDE while `./gradlew build` keeps working.
+ *
+ * Two things have to be covered, both of which these tasks do:
+ *
+ *   1. Every module, not just the ones on a resolved classpath. Studio builds a
+ *      model for the androidTest variants too, so configurations like
+ *      `debugAndroidTestCompileClasspath` are only ever resolved by the IDE.
+ *      Every resolvable configuration is therefore force-resolved here (lenient,
+ *      so unresolvable ones are skipped) before its modules are collected.
+ *
+ *   2. Every classifier the IDE asks for: the plain `sources` and `javadoc`
+ *      classifiers of each module, plus the variant specific sources jars
+ *      declared in the Gradle Module Metadata (e.g.
+ *      kotlin-gradle-plugin-2.2.10-gradle813-sources.jar), which are the ones the
+ *      IDE asks for.
+ *
+ * The project configurations are resolved from `taskGraph.whenReady` because
+ * Gradle 9 refuses to resolve them earlier (or from a task action) unless the
+ * caller owns the resolution lock.
+ */
+
+gradle.rootProject { root ->
+	def seen = new LinkedHashSet<String>()
+	def report = new StringBuilder()
+	// Records which artifacts failed verification, for verifyDependencySources.
+	// Declared before the closures below that append to it: a Groovy closure only
+	// captures local variables that already exist when the closure is created.
+	def verifyFailures = new LinkedHashSet<String>()
+
+	// Records the checksums of the given artifacts and, unless
+	// --write-verification-metadata is in effect, verifies them.
+	//
+	// Never throws: a lenient resolution still fails hard on a verification problem,
+	// and one missing checksum must not abort the remaining configurations.
+	def resolveAll = { configurations, dependencyHandler, label, notations ->
+		if (notations.isEmpty()) {
+			return
+		}
+		def detached = configurations.detachedConfiguration(*notations.collect { dependencyHandler.create(it) })
+		detached.setTransitive(false)
+		try {
+			detached.resolve()
+			report.append("  ${label}: ${notations.size()} verified\n")
+		} catch (Throwable e) {
+			// Narrow it down to the individual artifacts so the report stays readable.
+			// A missing checksum or a mismatch is a real problem; a module that simply
+			// does not publish the requested classifier (androidx publishes no javadoc
+			// jars, for example) is expected and must not be reported.
+			def bad = 0
+			notations.each { notation ->
+				try {
+					def single = configurations.detachedConfiguration(dependencyHandler.create(notation))
+					single.setTransitive(false)
+					single.resolve()
+				} catch (Throwable inner) {
+					if ((inner.message ?: '').contains('erification')) {
+						verifyFailures << "${notation} (${label})"
+						bad++
+					}
+				}
+			}
+			report.append("  ${label}: ${bad} of ${notations.size()} failed verification\n")
+		}
+	}
+
+	// Non-empty classifiers of the sources jars declared in a module's Gradle Module
+	// Metadata, e.g. "gradle813" for kotlin-gradle-plugin-2.2.10-gradle813-sources.jar.
+	// Modules whose sources jar carries no classifier (plain "<name>-<version>-sources.jar")
+	// are skipped: the plain `sources` notation already covers them.
+	def sourceClassifiers = { String id ->
+		def (group, name, version) = id.split(':') as List
+		def classifiers = new LinkedHashSet<String>()
+		def pattern = ~/^${java.util.regex.Pattern.quote(name + '-' + version)}-([A-Za-z0-9_.-]+)-sources\.jar$/
+		new File(root.gradle.gradleUserHomeDir, "caches/modules-2/files-2.1/${group}/${name}/${version}").eachFileRecurse { file ->
+			if (file.name.endsWith('.module')) {
+				new groovy.json.JsonSlurper().parse(file).variants?.each { variant ->
+					variant.files?.each { artifact ->
+						def matcher = pattern.matcher(artifact.name as String)
+						if (matcher.matches()) {
+							classifiers << matcher.group(1)
+						}
+					}
+				}
+			}
+		}
+		classifiers
+	}
+
+	root.tasks.register('pinDependencySources') {
+		group = 'verification'
+		description = 'Resolves the -sources/-javadoc jars Android Studio asks for, so their checksums can be recorded.'
+		doLast {
+			println report
+			println 'Sources resolved, re-run without --write-verification-metadata to verify.'
+		}
+	}
+
+	root.tasks.register('verifyDependencySources') {
+		group = 'verification'
+		description = 'Checks that gradle/verification-metadata.xml covers every -sources/-javadoc jar Android Studio asks for.'
+		doLast {
+			if (verifyFailures.isEmpty()) {
+				println 'OK: every -sources/-javadoc artifact Android Studio asks for is covered by the verification metadata.'
+			} else {
+				println "${verifyFailures.size()} artifact(s) failed dependency verification:"
+				verifyFailures.each { println "  $it" }
+				throw new GradleException('Dependency verification failed, see gradle/verification-metadata.xml')
+			}
+		}
+	}
+
+	gradle.taskGraph.whenReady {
+		def owners = []
+		owners << [root.buildscript, ':buildscript classpath', root.buildscript.configurations.getByName('classpath')]
+		gradle.rootProject.allprojects.each { p ->
+			p.configurations.findAll { it.canBeResolved }.each { cfg ->
+				owners << [p, "${p.path}:${cfg.name}", cfg]
+			}
+		}
+
+		owners.each { owner ->
+			def (script, label, cfg) = owner
+			try {
+				// Force the configuration to resolve so that its modules show up in the
+				// resolution result even when no task in this build needed them (the IDE
+				// resolves configurations such as debugAndroidTestCompileClasspath).
+				// Never fatal: the ids below are what we are after.
+				try {
+					cfg.resolvedConfiguration.lenientConfiguration.firstLevelModuleDependencies.each { }
+				} catch (Throwable ignored) {
+				}
+				def ids = cfg.incoming.resolutionResult.allComponents
+						.collect { it.id }
+						.findAll { it instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier }
+						.collect { it.getDisplayName() }
+						.unique()
+						.findAll { seen.add(it) }
+				resolveAll(script.configurations, script.dependencies, "${label} (sources)", ids.collect { it + ':sources' })
+				resolveAll(script.configurations, script.dependencies, "${label} (javadoc)", ids.collect { it + ':javadoc' })
+				resolveAll(script.configurations, script.dependencies, "${label} (variant sources)",
+						ids.collectMany { id -> sourceClassifiers(id).collect { id + ':' + it + '-sources' } })
+			} catch (Throwable e) {
+				report.append("  SKIP ${label}: ${e.class.simpleName}: ${e.message?.readLines()?.head()}\n")
+			}
+		}
+	}
+}

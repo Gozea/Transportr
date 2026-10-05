@@ -21,6 +21,7 @@ package de.grobox.transportr.ui;
 
 import android.content.Context;
 import androidx.annotation.ColorInt;
+import androidx.appcompat.R;
 import androidx.core.graphics.drawable.DrawableCompat;
 import android.util.TypedValue;
 import android.view.MenuItem;
@@ -30,8 +31,6 @@ import android.widget.PopupMenu.OnMenuItemClickListener;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-
-import de.grobox.transportr.R;
 
 public abstract class BasePopupMenu extends PopupMenu implements OnMenuItemClickListener {
 

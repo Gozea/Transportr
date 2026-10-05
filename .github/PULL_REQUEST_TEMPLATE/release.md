@@ -9,7 +9,7 @@ assignees: ''
 
 Here are the steps to follow when preparing a new release. Please check the following boxes with an `x` when done:
 
-* [ ] update PTE to the latest commit at [opentransitmap](https://gitlab.com/opentransitmap/public-transport-enabler/-/commits/master) and run `./update-dependency-pinning.sh`
+* [ ] update PTE to the latest commit at [opentransitmap](https://gitlab.com/opentransitmap/public-transport-enabler/-/commits/master) and refresh the pinned dependency checksums with `./gradlew --write-verification-metadata sha256 build -PbuildServer` followed by `./gradlew --write-verification-metadata sha256 --no-configuration-cache -I gradle/pin-sources.init.gradle pinDependencySources` (Gradle's built-in dependency verification has replaced the old `witness` plugin; `build` alone never resolves the `-sources` jars that Android Studio requests during sync, so they have to be pinned by the second command)
 * [ ] test the app (automatically using AndroidTest as well as manually), paying special attention to changes since the last release
 * [ ] fix any bugs if necessary
 * [ ] update translations from [Transifex](https://www.transifex.com/) using `tx pull --mode=developer -a` in the root folder (you need proper permissions to do that)

@@ -44,18 +44,18 @@ public class LocationPopupMenu extends BasePopupMenu {
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
-		switch (item.getItemId()) {
-			// From Here
-			case R.id.action_from_here:
-				presetDirections(context, location, null, null);
-				return true;
-			// Copy Station to Clipboard
-			case R.id.action_copy:
-				copyToClipboard(context, location.getFullName());
-				return true;
-			default:
-				return super.onMenuItemClick(item);
+		int itemId = item.getItemId();
+		// From Here
+		if (itemId == R.id.action_from_here) {
+			presetDirections(context, location, null, null);
+			return true;
 		}
+		// Copy Station to Clipboard
+		if (itemId == R.id.action_copy) {
+			copyToClipboard(context, location.getFullName());
+			return true;
+		}
+		return super.onMenuItemClick(item);
 	}
 
 }

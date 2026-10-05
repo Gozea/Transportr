@@ -14,6 +14,9 @@ local.properties
 !.idea/codeStyles/codeStyleConfig.xml
 !.idea/codeStyles/Project.xml
 !.idea/copyright
+# Keeps Android Studio's Gradle JDK set to GRADLE_LOCAL_JAVA_HOME, which makes a
+# fresh clone use a bundled/discovered JDK instead of a machine-specific path.
+!.idea/gradle.xml
 *.iml
 .gradle/
 

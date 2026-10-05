@@ -45,22 +45,23 @@ public class FavoriteTripPopupMenu extends AbstractFavoritesPopupMenu {
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
-		switch (item.getItemId()) {
-			case R.id.action_mark_favorite:
-				if (listener != null) {
-					listener.onFavoriteChanged(trip, !trip.isFavorite());
-				}
-				setFavState(item, trip.isFavorite());
-				return true;
-			case R.id.action_add_shortcut:
-				addShortcut(getShortcutName());
-				return true;
-			case R.id.action_trip_delete:
-				listener.onFavoriteDeleted(trip);
-				return true;
-			default:
-				return super.onMenuItemClick(item);
+		int itemId = item.getItemId();
+		if (itemId == R.id.action_mark_favorite) {
+			if (listener != null) {
+				listener.onFavoriteChanged(trip, !trip.isFavorite());
+			}
+			setFavState(item, trip.isFavorite());
+			return true;
 		}
+		if (itemId == R.id.action_add_shortcut) {
+			addShortcut(getShortcutName());
+			return true;
+		}
+		if (itemId == R.id.action_trip_delete) {
+			listener.onFavoriteDeleted(trip);
+			return true;
+		}
+		return super.onMenuItemClick(item);
 	}
 
 	private void setFavState(MenuItem item, boolean is_fav) {

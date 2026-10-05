@@ -47,10 +47,40 @@ The next step is to clone the source code repository.
 
     $ git clone https://github.com/grote/Transportr.git
 
+### Requirements
+
+To build Transportr you need:
+
+* The latest stable **Android Studio** (which bundles a suitable JDK).
+* The **Android SDK Platform 36** and **Build-Tools 36.0.0** (Android Studio offers to install these while syncing).
+* A **JDK 17 or newer** for command-line builds. Any current LTS JDK (17, 21, 25, ...) works, because the build produces Java 17 bytecode regardless of the JDK that runs Gradle.
+
+The project uses the Gradle wrapper, so no separate Gradle installation is needed.
+The repository pins the Gradle wrapper and all dependencies (Gradle's built-in
+[dependency verification](https://docs.gradle.org/current/userguide/dependency_verification.html)
+replaces the old `witness` plugin), so a clone always builds against known-good artifacts.
+
+### Android Studio
+
+Open the root directory (`File > Open...`) and let Android Studio sync. The
+checked-in `.idea/gradle.xml` sets the Gradle JDK to `GRADLE_LOCAL_JAVA_HOME`,
+so Android Studio uses the JDK it already ships with instead of asking for a
+machine-specific path. `local.properties` (which points at your SDK) is created
+automatically and is not committed.
+
+### Command Line
+
 If you don't want to use an IDE like Android Studio, you can build Transportr on the command line as follows.
 
     $ cd Transportr
-    $ ./gradlew assembleRelease
+    $ ./gradlew assembleDebug
+
+This produces `app/build/outputs/apk/debug/app-debug.apk`.
+
+If Gradle cannot find your Android SDK, either create a `local.properties` file
+containing `sdk.dir=/path/to/Android/Sdk` or set the `ANDROID_HOME` environment
+variable. Note that `assembleRelease` needs signing configuration (see the
+comments in `app/build.gradle`) and produces an unsigned APK otherwise.
 
 License
 -------

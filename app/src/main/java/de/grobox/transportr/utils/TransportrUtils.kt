@@ -32,6 +32,7 @@ import androidx.annotation.AttrRes
 import androidx.annotation.DrawableRes
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import com.mikepenz.materialdrawer.R as MaterialDrawerR
 import de.grobox.transportr.R
 import de.grobox.transportr.trips.detail.LegViewHolder
 import de.schildbach.pte.dto.Line
@@ -116,7 +117,7 @@ object TransportrUtils {
     }
 
     fun getLineColor(context: Context, line: Line): Int {
-        val themeBackgroundColor = context.getColorFromAttr(R.attr.material_drawer_background)
+        val themeBackgroundColor = context.getColorFromAttr(MaterialDrawerR.attr.material_drawer_background)
         val colorsToCheck = listOfNotNull(
             line.style?.backgroundColor,
             line.style?.backgroundColor2,

@@ -23,6 +23,7 @@ import android.text.format.DateFormat
 import android.text.format.DateUtils
 import android.view.View
 import androidx.core.content.ContextCompat
+import com.mikepenz.materialdrawer.R as MaterialDrawerR
 import de.grobox.transportr.R
 import java.util.*
 import kotlin.math.abs
@@ -71,7 +72,7 @@ object DateUtils {
         val delayMinutes = millisToMinutes(delay)
         return Delay(
             delay = "${if (delayMinutes >= 0) '+' else ""}$delayMinutes",
-            color = ContextCompat.getColor(context, if (delayMinutes > 0) R.color.md_red_500 else R.color.md_green_500)
+            color = ContextCompat.getColor(context, if (delayMinutes > 0) MaterialDrawerR.color.md_red_500 else MaterialDrawerR.color.md_green_500)
         )
     }
 

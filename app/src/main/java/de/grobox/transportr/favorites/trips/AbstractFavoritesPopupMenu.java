@@ -64,18 +64,18 @@ abstract class AbstractFavoritesPopupMenu extends BasePopupMenu {
 
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
-		switch (item.getItemId()) {
-			// Swap Locations
-			case R.id.action_swap_locations:
-				findDirections(context, trip.getTo(), trip.getVia(), trip.getFrom(), true, true);
-				return true;
-			// Preset Locations
-			case R.id.action_set_locations:
-				presetDirections(context, trip.getFrom(), trip.getVia(), trip.getTo(), true);
-				return true;
-			default:
-				return super.onMenuItemClick(item);
+		int itemId = item.getItemId();
+		// Swap Locations
+		if (itemId == R.id.action_swap_locations) {
+			findDirections(context, trip.getTo(), trip.getVia(), trip.getFrom(), true, true);
+			return true;
 		}
+		// Preset Locations
+		if (itemId == R.id.action_set_locations) {
+			presetDirections(context, trip.getFrom(), trip.getVia(), trip.getTo(), true);
+			return true;
+		}
+		return super.onMenuItemClick(item);
 	}
 
 	void addShortcut(String shortcutName) {
