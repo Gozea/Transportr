@@ -9,7 +9,29 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Build and unit-test on the oldest and newest supported LTS JDKs, so
+        # neither existing contributors (17) nor new ones (25) are forced to
+        # change their JDK. The app always produces Java 17 bytecode.
+        java-version: [ '17', '25' ]
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v5
+      - name: Build and unit test
+        run: ./gradlew build -PbuildServer --stacktrace
+
+  instrumented:
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
@@ -20,7 +42,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
       # see https://github.com/marketplace/actions/android-emulator-runner
       - name: Enable KVM
         run: |
@@ -61,5 +83,4 @@ jobs:
           arch: ${{ steps.avd-arch.outputs.arch }}
           profile: Nexus 6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-metrics -camera-back none
-          script: ./gradlew build connectedCheck -PbuildServer -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest --stacktrace
-
+          script: ./gradlew connectedCheck -PbuildServer -Pandroid.testInstrumentationRunnerArguments.notAnnotation=androidx.test.filters.LargeTest --stacktrace
